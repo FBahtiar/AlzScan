@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlzScan - AI Medical Diagnostics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary-dark: #0f1419;
+            --secondary-dark: #1a1f2e;
+            --tertiary-dark: #242d3c;
+            --accent-blue: #00d4ff;
+            --accent-cyan: #7dd3fc;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --surface-glass: rgba(255, 255, 255, 0.03);
+            --surface-glass-hover: rgba(255, 255, 255, 0.08);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
+            --shadow-medium: 0 8px 40px rgba(0, 0, 0, 0.35);
+            --shadow-strong: 0 25px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        /* Elegant background pattern */
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(125, 211, 252, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+        }
+
+        /* Subtle animated grid */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            animation: particleFloat 8s linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced cursor follower */
+        .cursor-glow {
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            transition: transform 0.15s ease-out;
+            mix-blend-mode: screen;
+        }
+
+        /* Navigation header */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(15, 20, 25, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-header.scrolled {
+            background: rgba(15, 20, 25, 0.95);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .logo-nav {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s ease;
+        }
+
+        .logo-nav:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-item {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: var(--surface-glass);
+        }
+
+        .nav-item.active {
+            color: var(--accent-blue);
+            background: var(--surface-glass);
+        }
+
+        /* Main content */
+        .main-content {
+            margin-top: 70px;
+            padding: 0;
+        }
+
+        /* Hero section */
+        .hero-section {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+            animation: titleReveal 1s ease-out;
+        }
+
+        @keyframes titleReveal {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            animation: subtitleReveal 1s ease-out 0.2s both;
+        }
+
+        @keyframes subtitleReveal {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Interactive brain image */
+        .brain-image-container {
+            position: absolute;
+            top: 50%;
+            right: 8%;
+            transform: translateY(-50%);
+            width: 320px;
+            height: 320px;
+            pointer-events: all;
+            cursor: pointer;
+            z-index: 3;
+        }
+
+        .brain-image {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 20px 40px rgba(0, 212, 255, 0.2));
+        }
+
+        .brain-image:hover {
+            transform: scale(1.05) rotate(2deg);
+            filter: drop-shadow(0 25px 50px rgba(0, 212, 255, 0.4));
+        }
+
+        .brain-svg {
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .brain-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .brain-image:hover .brain-glow {
+            opacity: 1;
+        }
+
+        .brain-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, rgba(125, 211, 252, 0.2) 50%, transparent 70%);
+            pointer-events: none;
+            transform: scale(0);
+            animation: rippleEffect 1s ease-out;
+        }
+
+        @keyframes rippleEffect {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .brain-pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--accent-blue);
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+            animation: pulseEffect 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseEffect {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.6;
+            }
+        }
+
+        .scan-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .scan-lines::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.3) 50%, transparent 100%);
+            animation: scanEffect 2s linear infinite;
+        }
+
+        .brain-image:hover .scan-lines {
+            opacity: 1;
+        }
+
+        @keyframes scanEffect {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(200%);
+            }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-medium);
+            transition: all 0.3s ease;
+            animation: sectionSlideIn 0.8s ease-out 0.4s both;
+        }
+
+        @keyframes sectionSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .upload-section:hover {
+            background: var(--surface-glass-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-strong);
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        /* Enhanced upload area */
+        .upload-area {
+            border: 2px dashed var(--border-subtle);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.01);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.05), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-blue);
+            background: rgba(0, 212, 255, 0.02);
+            transform: scale(1.01);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-cyan);
+            background: rgba(125, 211, 252, 0.05);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+            color: var(--accent-blue);
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: translateY(-5px) scale(1.1);
+            color: var(--accent-cyan);
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .upload-formats {
+            color: var(--text-tertiary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Preview section */
+        .preview-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            margin: 2rem 0;
+        }
+
+        .preview-section.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .preview-container {
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-medium);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .preview-image {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            aspect-ratio: 1;
+        }
+
+        .preview-image:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-image:hover img {
+            transform: scale(1.05);
+        }
+
+        .nifti-slice-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            background: var(--tertiary-dark);
+            min-height: 300px;
+            object-fit: contain;
+            border: 2px solid var(--border-subtle);
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .preview-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .file-info {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Tooltip styles */
+        .info-tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .info-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 20, 25, 0.95);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1000;
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(10px);
+        }
+
+        .info-tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        /* Analyze button */
+        .analyze-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analyze-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .analyze-btn:hover::before {
+            left: 100%;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 212, 255, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading section */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 2rem 0;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .loading.show {
+            display: block;
+            animation: fadeInScale 0.5s ease;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .loading p {
+            color: var(--text-secondary);
+        }
+
+        /* Results section */
+        .results-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            margin: 2rem 0;
+        }
+
+        .results-section.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .results-container {
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-medium);
+            text-align: center;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .result-prediction {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .result-prediction.positive {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+
+        .result-prediction.negative {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .result-prediction.mci {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+
+        /* New probability breakdown section */
+        .probability-breakdown {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .probability-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .probability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .probability-item:last-child {
+            border-bottom: none;
+        }
+
+        .probability-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .probability-value {
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+        }
+
+        .probability-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .probability-fill.alzheimer {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .probability-fill.normal {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        .probability-fill.mci {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .confidence-section {
+            margin: 2rem 0;
+        }
+
+        .confidence-text {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 4px;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .medical-advice {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            text-align: left;
+            border-left: 4px solid var(--accent-blue);
+            border-top: 1px solid var(--border-subtle);
+            border-right: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .advice-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .advice-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .method-info {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+            text-align: left;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .method-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* Messages */
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            font-weight: 500;
+            animation: messageSlide 0.4s ease;
+            border-left: 4px solid;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border-color: #ef4444;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+            border-color: #10b981;
+        }
+
+        /* Feature card styles */
+        .feature-card {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .help-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .help-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .help-item ul {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .help-item li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* File input hidden */
+        .file-input {
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .nav-header {
+                padding: 0 1rem;
+            }
+            
+            .nav-menu {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .hero-section {
+                padding: 2rem 1rem;
+            }
+            
+            .upload-section,
+            .results-container {
+                padding: 2rem 1rem;
+            }
+            
+            .preview-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .brain-image-container {
+                width: 250px;
+                height: 250px;
+                right: 5%;
+            }
+
+            .feature-card,
+            .help-item {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background elements -->
+    <div class="background-pattern"></div>
+    <div class="grid-overlay"></div>
+    <div class="particles" id="particles"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Navigation -->
+    <nav class="nav-header" id="navHeader">
+        <a href="#" class="logo-nav" onclick="showSection('upload')">
+            <div class="logo-icon">
+                <svg viewBox="0 0 100 100" width="20" height="20" fill="currentColor">
+                    <path d="M50 15c-3.5 0-6.8 0.7-9.8 2-2.9 1.3-5.5 3.1-7.6 5.4-2.1 2.3-3.7 5-4.8 8-1.1 3-1.6 6.2-1.6 9.5 0 2.8 0.4 5.5 1.2 8.1 0.8 2.6 2 5 3.5 7.2 1.5 2.2 3.3 4.1 5.4 5.7 2.1 1.6 4.4 2.9 6.9 3.8v3.5c0 1.4 1.1 2.5 2.5 2.5h6c1.4 0 2.5-1.1 2.5-2.5v-3.5c2.5-0.9 4.8-2.2 6.9-3.8 2.1-1.6 3.9-3.5 5.4-5.7 1.5-2.2 2.7-4.6 3.5-7.2 0.8-2.6 1.2-5.3 1.2-8.1 0-3.3-0.5-6.5-1.6-9.5-1.1-3-2.7-5.7-4.8-8-2.1-2.3-4.7-4.1-7.6-5.4-2.9-1.3-6.2-2-9.8-2zm0 5c2.8 0 5.4 0.5 7.8 1.6 2.4 1.1 4.4 2.5 6.1 4.3 1.7 1.8 3 3.9 3.8 6.3 0.8 2.4 1.3 4.9 1.3 7.6 0 2.2-0.3 4.3-0.9 6.3-0.6 2-1.5 3.8-2.7 5.5-1.2 1.7-2.6 3.2-4.3 4.4-1.7 1.2-3.5 2.2-5.5 2.9v-2.9c0-1.4-1.1-2.5-2.5-2.5h-1c-1.4 0-2.5 1.1-2.5 2.5v2.9c-2-0.7-3.8-1.7-5.5-2.9-1.7-1.2-3.1-2.7-4.3-4.4-1.2-1.7-2.1-3.5-2.7-5.5-0.6-2-0.9-4.1-0.9-6.3 0-2.7 0.5-5.2 1.3-7.6 0.8-2.4 2.1-4.5 3.8-6.3 1.7-1.8 3.7-3.2 6.1-4.3 2.4-1.1 5-1.6 7.8-1.6z"/>
+                    <path d="M42 35c-0.6 0-1 0.4-1 1s0.4 1 1 1c0.6 0 1-0.4 1-1s-0.4-1-1-1z"/>
+                    <path d="M58 35c-0.6 0-1 0.4-1 1s0.4 1 1 1c0.6 0 1-0.4 1-1s-0.4-1-1-1z"/>
+                    <path d="M46 42c-0.3 0.5-0.1 1.1 0.4 1.4l3 2c0.5 0.3 1.1 0.1 1.4-0.4 0.3-0.5 0.1-1.1-0.4-1.4l-3-2c-0.5-0.3-1.1-0.1-1.4 0.4z"/>
+                    <path d="M54 42c-0.3-0.5-0.9-0.7-1.4-0.4l-3 2c-0.5 0.3-0.7 0.9-0.4 1.4 0.3 0.5 0.9 0.7 1.4 0.4l3-2c0.5-0.3 0.7-0.9 0.4-1.4z"/>
+                </svg>
+            </div>
+            AlzScan
+        </a>
+        <ul class="nav-menu">
+            <li><a class="nav-item" data-section="upload">Upload</a></li>
+            <li><a class="nav-item" data-section="results">Results</a></li>
+            <li><a class="nav-item" data-section="about">About</a></li>
+            <li><a class="nav-item" data-section="help">Help</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        <!-- Hero section -->
+        <section class="hero-section">
+            <h1 class="hero-title">AlzScan</h1>
+            <p class="hero-subtitle">
+                Advanced AI-powered medical imaging analysis for early Alzheimer's detection using state-of-the-art neural networks
+            </p>
+            
+            <!-- Interactive brain image -->
+            <div class="brain-image-container" id="brainImageContainer">
+                <div class="brain-image" id="brainImage">
+                    <div class="brain-glow"></div>
+                    <div class="brain-pulse"></div>
+                    <div class="scan-lines"></div>
+                    <svg class="brain-svg" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.9" />
+                                <stop offset="50%" style="stop-color:#7dd3fc;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.9" />
+                            </linearGradient>
+                            <linearGradient id="brainHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.4" />
+                                <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.2" />
+                            </linearGradient>
+                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                                <feMerge> 
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                            <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="2" result="softGlow"/>
+                                <feMerge> 
+                                    <feMergeNode in="softGlow"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Left Brain Hemisphere -->
+                        <g fill="url(#brainGradient)" filter="url(#glow)" stroke-width="8" stroke="url(#brainHighlight)">
+                            <!-- Frontal lobe curves -->
+                            <path d="M380 220 Q340 200, 320 240 Q300 280, 320 320 Q340 350, 380 340 Q400 320, 390 300 Q380 280, 390 260 Q400 240, 380 220 Z"/>
+                            <path d="M350 280 Q320 260, 300 290 Q280 320, 300 350 Q320 380, 350 370 Q370 350, 360 330 Q350 310, 360 290 Q370 270, 350 280 Z"/>
+                            
+                            <!-- Parietal curves -->
+                            <path d="M420 180 Q380 160, 360 200 Q340 240, 360 280 Q380 310, 420 300 Q440 280, 430 260 Q420 240, 430 220 Q440 200, 420 180 Z"/>
+                            <path d="M390 240 Q360 220, 340 260 Q320 300, 340 340 Q360 370, 390 360 Q410 340, 400 320 Q390 300, 400 280 Q410 260, 390 240 Z"/>
+                            
+                            <!-- Temporal curves -->
+                            <path d="M320 360 Q280 340, 260 380 Q240 420, 260 460 Q280 490, 320 480 Q340 460, 330 440 Q320 420, 330 400 Q340 380, 320 360 Z"/>
+                            <path d="M360 400 Q320 380, 300 420 Q280 460, 300 500 Q320 530, 360 520 Q380 500, 370 480 Q360 460, 370 440 Q380 420, 360 400 Z"/>
+                            
+                            <!-- Occipital curves -->
+                            <path d="M400 320 Q360 300, 340 340 Q320 380, 340 420 Q360 450, 400 440 Q420 420, 410 400 Q400 380, 410 360 Q420 340, 400 320 Z"/>
+                            <path d="M440 360 Q400 340, 380 380 Q360 420, 380 460 Q400 490, 440 480 Q460 460, 450 440 Q440 420, 450 400 Q460 380, 440 360 Z"/>
+                            
+                            <!-- Additional folding details -->
+                            <path d="M370 200 Q340 180, 320 220 Q300 260, 320 300 Q340 330, 370 320 Q390 300, 380 280 Q370 260, 380 240 Q390 220, 370 200 Z"/>
+                            <path d="M330 320 Q300 300, 280 340 Q260 380, 280 420 Q300 450, 330 440 Q350 420, 340 400 Q330 380, 340 360 Q350 340, 330 320 Z"/>
+                            <path d="M410 260 Q380 240, 360 280 Q340 320, 360 360 Q380 390, 410 380 Q430 360, 420 340 Q410 320, 420 300 Q430 280, 410 260 Z"/>
+                            
+                            <!-- Inner folding patterns -->
+                            <path d="M350 230 Q330 210, 320 240 Q310 270, 320 300 Q330 330, 350 320 Q360 300, 355 280 Q350 260, 355 250 Q360 240, 350 230 Z"/>
+                            <path d="M380 290 Q360 270, 350 300 Q340 330, 350 360 Q360 390, 380 380 Q390 360, 385 340 Q380 320, 385 310 Q390 300, 380 290 Z"/>
+                        </g>
+
+                        <!-- Right Brain Hemisphere -->
+                        <g fill="url(#brainGradient)" filter="url(#glow)" stroke-width="8" stroke="url(#brainHighlight)">
+                            <!-- Frontal lobe curves -->
+                            <path d="M620 220 Q660 200, 680 240 Q700 280, 680 320 Q660 350, 620 340 Q600 320, 610 300 Q620 280, 610 260 Q600 240, 620 220 Z"/>
+                            <path d="M650 280 Q680 260, 700 290 Q720 320, 700 350 Q680 380, 650 370 Q630 350, 640 330 Q650 310, 640 290 Q630 270, 650 280 Z"/>
+                            
+                            <!-- Parietal curves -->
+                            <path d="M580 180 Q620 160, 640 200 Q660 240, 640 280 Q620 310, 580 300 Q560 280, 570 260 Q580 240, 570 220 Q560 200, 580 180 Z"/>
+                            <path d="M610 240 Q640 220, 660 260 Q680 300, 660 340 Q640 370, 610 360 Q590 340, 600 320 Q610 300, 600 280 Q590 260, 610 240 Z"/>
+                            
+                            <!-- Temporal curves -->
+                            <path d="M680 360 Q720 340, 740 380 Q760 420, 740 460 Q720 490, 680 480 Q660 460, 670 440 Q680 420, 670 400 Q660 380, 680 360 Z"/>
+                            <path d="M640 400 Q680 380, 700 420 Q720 460, 700 500 Q680 530, 640 520 Q620 500, 630 480 Q640 460, 630 440 Q620 420, 640 400 Z"/>
+                            
+                            <!-- Occipital curves -->
+                            <path d="M600 320 Q640 300, 660 340 Q680 380, 660 420 Q640 450, 600 440 Q580 420, 590 400 Q600 380, 590 360 Q580 340, 600 320 Z"/>
+                            <path d="M560 360 Q600 340, 620 380 Q640 420, 620 460 Q600 490, 560 480 Q540 460, 550 440 Q560 420, 550 400 Q540 380, 560 360 Z"/>
+                            
+                            <!-- Additional folding details -->
+                            <path d="M630 200 Q660 180, 680 220 Q700 260, 680 300 Q660 330, 630 320 Q610 300, 620 280 Q630 260, 620 240 Q610 220, 630 200 Z"/>
+                            <path d="M670 320 Q700 300, 720 340 Q740 380, 720 420 Q700 450, 670 440 Q650 420, 660 400 Q670 380, 660 360 Q650 340, 670 320 Z"/>
+                            <path d="M590 260 Q620 240, 640 280 Q660 320, 640 360 Q620 390, 590 380 Q570 360, 580 340 Q590 320, 580 300 Q570 280, 590 260 Z"/>
+                            
+                            <!-- Inner folding patterns -->
+                            <path d="M650 230 Q670 210, 680 240 Q690 270, 680 300 Q670 330, 650 320 Q640 300, 645 280 Q650 260, 645 250 Q640 240, 650 230 Z"/>
+                            <path d="M620 290 Q640 270, 650 300 Q660 330, 650 360 Q640 390, 620 380 Q610 360, 615 340 Q620 320, 615 310 Q610 300, 620 290 Z"/>
+                        </g>
+
+                        <!-- Central dividing line with subtle animation -->
+                        <line x1="500" y1="180" x2="500" y2="520" stroke="url(#brainHighlight)" stroke-width="3" opacity="0.6" filter="url(#innerGlow)"/>
+                        
+                        <!-- Neural activity dots for animation -->
+                        <g fill="url(#brainGradient)" opacity="0.8">
+                            <circle cx="350" cy="250" r="6" filter="url(#glow)"/>
+                            <circle cx="380" cy="300" r="5" filter="url(#glow)"/>
+                            <circle cx="330" cy="350" r="4" filter="url(#glow)"/>
+                            <circle cx="410" cy="280" r="5" filter="url(#glow)"/>
+                            <circle cx="370" cy="400" r="4" filter="url(#glow)"/>
+                            
+                            <circle cx="650" cy="250" r="6" filter="url(#glow)"/>
+                            <circle cx="620" cy="300" r="5" filter="url(#glow)"/>
+                            <circle cx="670" cy="350" r="4" filter="url(#glow)"/>
+                            <circle cx="590" cy="280" r="5" filter="url(#glow)"/>
+                            <circle cx="630" cy="400" r="4" filter="url(#glow)"/>
+                        </g>
+                        
+                        <!-- Subtle neural pathways -->
+                        <g stroke="url(#brainHighlight)" stroke-width="2" fill="none" opacity="0.4" filter="url(#innerGlow)">
+                            <path d="M370 270 Q400 250, 430 270 Q460 290, 490 280"/>
+                            <path d="M350 320 Q380 300, 410 320 Q440 340, 470 330"/>
+                            <path d="M330 370 Q360 350, 390 370 Q420 390, 450 380"/>
+                            
+                            <path d="M630 270 Q600 250, 570 270 Q540 290, 510 280"/>
+                            <path d="M650 320 Q620 300, 590 320 Q560 340, 530 330"/>
+                            <path d="M670 370 Q640 350, 610 370 Q580 390, 550 380"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main container -->
+        <div class="container">
+            <!-- Upload section -->
+            <section class="upload-section" id="upload">
+                <h2 class="section-title">
+                    <div class="section-icon">📋</div>
+                    Upload Medical Scan
+                </h2>
+                <p class="section-description">
+                    Upload your brain scan for AI-powered analysis. Supports high-resolution medical images and 3D NIFTI files with advanced preprocessing.
+                </p>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop your medical scan here</div>
+                    <div class="upload-formats">PNG, JPG, JPEG, NIFTI (.nii, .nii.gz)</div>
+                    <button type="button" class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Select File
+                    </button>
+                </div>
+                
+                <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.nii,.nii.gz" />
+            </section>
+
+            <!-- Preview section -->
+            <section class="preview-section" id="previewSection">
+                <div class="preview-container">
+                    <div class="preview-image" id="previewImageContainer">
+                        <img id="previewImg" style="display: none;" />
+                        <canvas id="niftiSliceCanvas" class="nifti-slice-preview" style="display: none;"></canvas>
+                    </div>
+                    <div class="preview-info">
+                        <div class="file-info" id="fileInfo">
+                            <div class="info-item">
+                                <span class="info-label">Filename</span>
+                                <span class="info-value" id="fileName">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Size</span>
+                                <span class="info-value" id="fileSize">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Type</span>
+                                <span class="info-value" id="fileType">-</span>
+                            </div>
+                            <div class="info-item" id="dimensionsInfo" style="display: none;">
+                                <span class="info-label">Dimensions</span>
+                                <span class="info-value" id="niftiDimensions">-</span>
+                            </div>
+                            <div class="info-item" id="sliceInfo" style="display: none;">
+                                <span class="info-label info-tooltip" data-tooltip="Axial slice selected using optimal brain region rules (192→118, 240→140, 256→160)">Selected Slice</span>
+                                <span class="info-value" id="selectedSlice">-</span>
+                            </div>
+                        </div>
+                        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeImage()">
+                            Analyze with AlzScan
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading section -->
+            <section class="loading" id="loadingSection">
+                <div class="loading-spinner"></div>
+                <h3>Processing Neural Analysis</h3>
+                <p>Analyzing brain scan with EfficientNet V2 + Multi-Head Self-Attention...</p>
+            </section>
+
+            <!-- Results section -->
+            <section class="results-section" id="resultsSection">
+                <div class="results-container">
+                    <h2 class="result-title">Analysis Results</h2>
+                    <div class="result-prediction" id="resultPrediction">-</div>
+                    
+                    <!-- Probability Breakdown Section -->
+                    <div class="probability-breakdown" id="probabilityBreakdown" style="display: none;">
+                        <div class="probability-title">Detailed Probability Analysis</div>
+                        <div id="probabilityItems">
+                            <!-- Dynamic probability items will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Medical Advice Section -->
+                    <div class="medical-advice" id="medicalAdvice" style="display: none;">
+                        <div class="advice-title">
+                            <span>🩺</span>
+                            <span id="adviceTitle">Saran Medis</span>
+                        </div>
+                        <div class="advice-content" id="adviceContent">
+                            <!-- Dynamic content based on prediction -->
+                        </div>
+                    </div>
+                    
+                    <div class="confidence-section">
+                        <div class="confidence-text">Tingkat Kepercayaan: <span id="confidenceText">0%</span></div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="method-info">
+                        <div class="method-title">Technical Details</div>
+                        <div class="info-item">
+                            <span class="info-label">AI Model</span>
+                            <span class="info-value" id="modelMethod">EfficientNet V2 + MHSA</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Preprocessing</span>
+                            <span class="info-value" id="preprocessing">Adaptive slice selection & normalization</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Resolution</span>
+                            <span class="info-value" id="processedSize">224x224 pixels</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Processing</span>
+                            <span class="info-value" id="processingMethod">Remote AI Server</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About section -->
+            <section class="upload-section" id="about" style="display: none;">
+                <h2 class="section-title">
+                    <div class="section-icon">🧠</div>
+                    About AlzScan
+                </h2>
+                <div class="about-content">
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 1.1rem;">
+                        AlzScan adalah platform AI medis canggih yang dirancang untuk membantu deteksi dini Alzheimer's Disease dan Mild Cognitive Impairment (MCI) melalui analisis citra medis.
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+                        <div class="feature-card">
+                            <h3 style="color: var(--accent-blue); margin-bottom: 1rem; font-size: 1.2rem;">🎯 Teknologi AI Terdepan</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                Menggunakan EfficientNet V2 dengan Multi-Head Self-Attention untuk analisis citra medis dengan akurasi tinggi.
+                            </p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem; font-size: 1.2rem;">📊 Analisis Komprehensif</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                Memberikan hasil analisis dengan tingkat kepercayaan dan probabilitas detail untuk setiap kondisi.
+                            </p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3 style="color: var(--accent-blue); margin-bottom: 1rem; font-size: 1.2rem;">🩺 Panduan Medis</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                Menyediakan rekomendasi medis yang sesuai berdasarkan hasil analisis untuk langkah selanjutnya.
+                            </p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem; font-size: 1.2rem;">🔒 Privasi & Keamanan</h3>
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                Data medis diproses dengan standar keamanan tinggi dan tidak disimpan di server.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="medical-advice" style="margin-top: 2rem;">
+                        <div class="advice-title">
+                            <span>⚠️</span>
+                            <span>Disclaimer Medis</span>
+                        </div>
+                        <div class="advice-content">
+                            AlzScan adalah alat bantu skrining yang menggunakan teknologi AI untuk analisis awal. 
+                            <strong>Hasil dari sistem ini tidak dapat menggantikan diagnosis medis profesional.</strong> 
+                            Selalu konsultasikan dengan dokter spesialis untuk diagnosis yang akurat dan pengobatan yang tepat.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Help section -->
+            <section class="upload-section" id="help" style="display: none;">
+                <h2 class="section-title">
+                    <div class="section-icon">❓</div>
+                    Panduan Penggunaan
+                </h2>
+                <div class="help-content">
+                    <div style="display: grid; gap: 2rem;">
+                        <div class="help-item">
+                            <h3 style="color: var(--accent-blue); margin-bottom: 1rem;">📤 1. Upload File</h3>
+                            <ul>
+                                <li>• Drag & drop file ke area upload atau klik "Select File"</li>
+                                <li>• Format yang didukung: PNG, JPG, JPEG, NIFTI (.nii, .nii.gz)</li>
+                                <li>• Pastikan citra medis berkualitas tinggi dan jelas</li>
+                                <li>• Ukuran file maksimal: 50MB</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="help-item">
+                            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">🔍 2. Preview & Verifikasi</h3>
+                            <ul>
+                                <li>• Periksa preview citra yang ter-upload</li>
+                                <li>• Verifikasi informasi file (nama, ukuran, tipe)</li>
+                                <li>• Untuk NIFTI: sistem akan menampilkan slice terpilih</li>
+                                <li>• Pastikan citra sesuai sebelum melanjutkan analisis</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="help-item">
+                            <h3 style="color: var(--accent-blue); margin-bottom: 1rem;">⚡ 3. Analisis AI</h3>
+                            <ul>
+                                <li>• Klik "Analyze with AlzScan" untuk memulai</li>
+                                <li>• Proses analisis membutuhkan waktu 30-60 detik</li>
+                                <li>• AI akan memproses citra dengan model neural network</li>
+                                <li>• Jangan tutup browser selama proses berlangsung</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="help-item">
+                            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">📊 4. Interpretasi Hasil</h3>
+                            <ul>
+                                <li><strong style="color: #10b981;">Normal:</strong> Tidak terdeteksi indikasi gangguan kognitif</li>
+                                <li><strong style="color: #f59e0b;">MCI:</strong> Kemungkinan Mild Cognitive Impairment</li>
+                                <li><strong style="color: #ef4444;">AD:</strong> Indikasi Alzheimer's Disease</li>
+                                <li>• Perhatikan tingkat kepercayaan dan saran medis</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="medical-advice" style="margin-top: 2rem;">
+                        <div class="advice-title">
+                            <span>💡</span>
+                            <span>Tips Penting</span>
+                        </div>
+                        <div class="advice-content">
+                            <strong>Kualitas Citra:</strong> Gunakan citra medis dengan resolusi tinggi dan kontras yang baik untuk hasil optimal.<br><br>
+                            <strong>Format NIFTI:</strong> Untuk file 3D NIFTI, sistem akan otomatis memilih slice terbaik untuk analisis.<br><br>
+                            <strong>Konsultasi Medis:</strong> Hasil AI ini hanya untuk skrining awal. Selalu konsultasikan dengan dokter spesialis untuk diagnosis definitif.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        let currentFile = null;
+        let currentNiftiSlice = null;
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initCursorFollow();
+            initParticles();
+            initNavigation();
+            initFileUpload();
+            initInteractiveBrain();
+        });
+
+        // Enhanced cursor following effect
+        function initCursorFollow() {
+            const cursorGlow = document.getElementById('cursorGlow');
+            let mouseX = 0, mouseY = 0;
+            let glowX = 0, glowY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            function animateCursor() {
+                const speed = 0.1;
+                glowX += (mouseX - glowX) * speed;
+                glowY += (mouseY - glowY) * speed;
+                
+                cursorGlow.style.transform = `translate(${glowX - 100}px, ${glowY - 100}px)`;
+                requestAnimationFrame(animateCursor);
+            }
+            animateCursor();
+        }
+
+        // Floating particles system
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                createParticle(particlesContainer, i);
+            }
+
+            function createParticle(container, index) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random starting position
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = (index * 0.4) + 's';
+                particle.style.animationDuration = (8 + Math.random() * 4) + 's';
+                
+                container.appendChild(particle);
+
+                // Remove and recreate particle when animation ends
+                particle.addEventListener('animationend', () => {
+                    particle.remove();
+                    setTimeout(() => createParticle(container, index), Math.random() * 2000);
+                });
+            }
+        }
+
+        // Enhanced navigation system
+        function initNavigation() {
+            const navHeader = document.getElementById('navHeader');
+            
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navHeader.classList.add('scrolled');
+                } else {
+                    navHeader.classList.remove('scrolled');
+                }
+            });
+
+            // Enhanced navigation with section switching
+            document.querySelectorAll('.nav-item').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = link.getAttribute('data-section');
+                    
+                    if (section === 'results') {
+                        if (!document.getElementById('resultsSection').classList.contains('show')) {
+                            showError('No analysis results available yet. Please upload and analyze a medical scan first.');
+                            return;
+                        }
+                    }
+                    
+                    showSection(section);
+                });
+            });
+        }
+
+        // Interactive brain image with cursor effects
+        function initInteractiveBrain() {
+            const brainContainer = document.getElementById('brainImageContainer');
+            const brainImage = document.getElementById('brainImage');
+            
+            if (!brainContainer || !brainImage) return;
+
+            // Create ripple effect on click
+            brainImage.addEventListener('click', (e) => {
+                const rect = brainImage.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                createRipple(x, y, brainImage);
+                
+                // Add extra glow effect
+                brainImage.style.filter = 'drop-shadow(0 25px 60px rgba(0, 212, 255, 0.6))';
+                setTimeout(() => {
+                    brainImage.style.filter = 'drop-shadow(0 20px 40px rgba(0, 212, 255, 0.2))';
+                }, 500);
+            });
+
+            // Mouse move effect for cursor tracking
+            brainImage.addEventListener('mousemove', (e) => {
+                const rect = brainImage.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const x = e.clientX - rect.left - centerX;
+                const y = e.clientY - rect.top - centerY;
+                
+                const rotateX = (y / centerY) * -10;
+                const rotateY = (x / centerX) * 10;
+                
+                brainImage.style.transform = `scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            brainImage.addEventListener('mouseleave', () => {
+                brainImage.style.transform = 'scale(1) rotateX(0deg) rotateY(0deg)';
+            });
+
+            // Add floating animation
+            let floatAnimation = 0;
+            function animateBrainFloat() {
+                floatAnimation += 0.02;
+                const floatY = Math.sin(floatAnimation) * 10;
+                const floatRotate = Math.cos(floatAnimation * 0.5) * 3;
+                
+                brainContainer.style.transform = `translateY(calc(-50% + ${floatY}px)) rotate(${floatRotate}deg)`;
+                requestAnimationFrame(animateBrainFloat);
+            }
+            animateBrainFloat();
+
+            // Animate neural nodes
+            const nodes = brainImage.querySelectorAll('circle');
+            nodes.forEach((node, index) => {
+                let nodeAnimation = index * 0.5;
+                function animateNode() {
+                    nodeAnimation += 0.03;
+                    const scale = 1 + Math.sin(nodeAnimation) * 0.3;
+                    const opacity = 0.6 + Math.sin(nodeAnimation) * 0.4;
+                    
+                    node.style.transform = `scale(${scale})`;
+                    node.style.opacity = opacity;
+                    
+                    requestAnimationFrame(animateNode);
+                }
+                setTimeout(() => animateNode(), index * 100);
+            });
+
+            // Pulse neural pathways
+            const pathways = brainImage.querySelectorAll('path');
+            pathways.forEach((path, index) => {
+                if (index < 4) { // Only neural pathway paths
+                    let pathAnimation = index * 0.7;
+                    function animatePath() {
+                        pathAnimation += 0.025;
+                        const opacity = 0.4 + Math.sin(pathAnimation) * 0.4;
+                        const strokeWidth = 2 + Math.sin(pathAnimation * 2) * 1;
+                        
+                        path.style.opacity = opacity;
+                        path.style.strokeWidth = strokeWidth;
+                        
+                        requestAnimationFrame(animatePath);
+                    }
+                    setTimeout(() => animatePath(), index * 200);
+                }
+            });
+        }
+
+        function createRipple(x, y, container) {
+            const ripple = document.createElement('div');
+            ripple.className = 'brain-ripple';
+            ripple.style.left = (x - 25) + 'px';
+            ripple.style.top = (y - 25) + 'px';
+            ripple.style.width = '50px';
+            ripple.style.height = '50px';
+            
+            container.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 1000);
+        }
+
+        // Function to show specific sections
+        function showSection(sectionName) {
+            // Update navigation active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const activeNavItem = document.querySelector(`[data-section="${sectionName}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+            
+            // Hide all sections
+            const sections = ['upload', 'about', 'help'];
+            sections.forEach(section => {
+                const element = document.getElementById(section);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+            
+            // Hide results and preview sections
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('previewSection').classList.remove('show');
+            document.getElementById('loadingSection').classList.remove('show');
+            
+            // Show requested section and scroll to it
+            let targetElement = null;
+            
+            if (sectionName === 'upload') {
+                document.getElementById('upload').style.display = 'block';
+                targetElement = document.getElementById('upload');
+                
+                if (currentFile) {
+                    setTimeout(() => {
+                        document.getElementById('previewSection').classList.add('show');
+                    }, 100);
+                }
+            } else if (sectionName === 'results') {
+                document.getElementById('upload').style.display = 'block';
+                
+                if (currentFile) {
+                    setTimeout(() => {
+                        document.getElementById('previewSection').classList.add('show');
+                        document.getElementById('resultsSection').classList.add('show');
+                    }, 100);
+                    // Scroll to results section
+                    setTimeout(() => {
+                        document.getElementById('resultsSection').scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }, 200);
+                    return; // Exit early to avoid top scroll
+                } else {
+                    targetElement = document.getElementById('upload');
+                }
+            } else if (sectionName === 'about') {
+                document.getElementById('about').style.display = 'block';
+                targetElement = document.getElementById('about');
+            } else if (sectionName === 'help') {
+                document.getElementById('help').style.display = 'block';
+                targetElement = document.getElementById('help');
+            }
+
+            // Smooth scroll to the target section
+            if (targetElement) {
+                setTimeout(() => {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+            } else {
+                // Fallback: scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Enhanced file upload with better feedback
+        function initFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // Enhanced drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.remove('dragover');
+                }, false);
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleFile(file) {
+            currentFile = file;
+            updateFileInfo(file);
+            showPreview(file);
+            showSuccess('File uploaded successfully! Ready for analysis.');
+        }
+
+        function updateFileInfo(file) {
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            
+            const extension = file.name.toLowerCase().split('.').pop();
+            const fileType = document.getElementById('fileType');
+            const dimensionsInfo = document.getElementById('dimensionsInfo');
+            const sliceInfo = document.getElementById('sliceInfo');
+            
+            if (['jpg', 'jpeg', 'png'].includes(extension)) {
+                fileType.textContent = 'Medical Image';
+                dimensionsInfo.style.display = 'none';
+                sliceInfo.style.display = 'none';
+            } else if (['nii', 'gz'].includes(extension) || file.name.includes('.nii')) {
+                fileType.textContent = '3D NIFTI Scan';
+                dimensionsInfo.style.display = 'flex';
+                sliceInfo.style.display = 'flex';
+            }
+        }
+
+        function showPreview(file) {
+            const previewSection = document.getElementById('previewSection');
+            const previewImg = document.getElementById('previewImg');
+            const niftiCanvas = document.getElementById('niftiSliceCanvas');
+            
+            const extension = file.name.toLowerCase().split('.').pop();
+            
+            if (['jpg', 'jpeg', 'png'].includes(extension)) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    niftiCanvas.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else if (['nii', 'gz'].includes(extension) || file.name.includes('.nii')) {
+                previewImg.style.display = 'none';
+                niftiCanvas.style.display = 'block';
+                processNiftiForPreview(file);
+            }
+            
+            setTimeout(() => {
+                previewSection.classList.add('show');
+            }, 100);
+        }
+
+        function processNiftiForPreview(file) {
+            // Create FormData to send to backend for processing
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('preview_only', 'true'); // Flag for preview
+
+            // Show loading state for canvas
+            const canvas = document.getElementById('niftiSliceCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 300;
+            canvas.height = 300;
+            
+            // Draw loading state
+            ctx.fillStyle = '#1a1f2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = '16px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('Processing NIFTI...', canvas.width/2, canvas.height/2);
+
+            // Send request to get slice preview
+            fetch('/get_nifti_preview', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.slice_image) {
+                    // Display the slice image
+                    const img = new Image();
+                    img.onload = function() {
+                        // Draw the slice on canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Update slice info
+                        document.getElementById('niftiDimensions').textContent = data.dimensions || 'N/A';
+                        document.getElementById('selectedSlice').textContent = `${data.slice_index}/${data.total_slices}`;
+                    };
+                    img.src = 'data:image/jpeg;base64,' + data.slice_image;
+                } else {
+                    // Show error on canvas
+                    ctx.fillStyle = '#1a1f2e';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = '14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Error loading NIFTI', canvas.width/2, canvas.height/2);
+                    showError(data.error || 'Gagal memuat preview NIFTI');
+                }
+            })
+            .catch(error => {
+                console.error('NIFTI Preview Error:', error);
+                // Show error on canvas
+                ctx.fillStyle = '#1a1f2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ef4444';
+                ctx.font = '14px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Preview unavailable', canvas.width/2, canvas.height/2);
+                showError('Gagal memuat preview NIFTI');
+            });
+        }
+
+        // Function to convert short codes to full medical terms
+        function getFullMedicalTerm(prediction) {
+            const pred = prediction.toLowerCase().trim();
+            
+            if (pred === 'ad' || pred === 'alzheimer' || pred.includes('alzheimer')) {
+                return "Alzheimer's Disease";
+            } else if (pred === 'mci' || pred.includes('mild cognitive')) {
+                return "Mild Cognitive Impairment";
+            } else if (pred === 'nor' || pred === 'normal' || pred.includes('normal')) {
+                return "Normal";
+            } else {
+                return prediction;
+            }
+        }
+
+        // Enhanced analyze function with real backend integration
+        function analyzeImage() {
+            if (!currentFile) {
+                showError('Harap upload file scan medis terlebih dahulu sebelum dianalisis.');
+                return;
+            }
+
+            const loadingSection = document.getElementById('loadingSection');
+            const resultsSection = document.getElementById('resultsSection');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
+            // Show loading state
+            loadingSection.classList.add('show');
+            resultsSection.classList.remove('show');
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Processing...';
+
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('file', currentFile);
+
+            // Send to Flask backend
+            fetch('/classify', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSection.classList.remove('show');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze with AlzScan';
+
+                if (data.success) {
+                    displayResults(data);
+                    showSuccess('Analisis berhasil diselesaikan!');
+                } else {
+                    showError(data.error || 'Analisis gagal. Silakan coba lagi.');
+                }
+            })
+            .catch(error => {
+                console.error('Analysis Error:', error);
+                loadingSection.classList.remove('show');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze with AlzScan';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    showError('Tidak dapat terhubung ke server AI. Periksa koneksi internet Anda.');
+                } else if (error.message.includes('504')) {
+                    showError('Timeout: Server AI membutuhkan waktu terlalu lama. Coba lagi nanti.');
+                } else if (error.message.includes('502')) {
+                    showError('Server AI tidak tersedia saat ini. Coba lagi nanti.');
+                } else {
+                    showError(`Analisis gagal: ${error.message}`);
+                }
+            });
+        }
+
+        function getMedicalAdvice(prediction) {
+            const fullTerm = getFullMedicalTerm(prediction);
+            
+            if (fullTerm.includes("Alzheimer's Disease")) {
+                return {
+                    title: '⚠️ Perlu Perhatian Medis Segera',
+                    content: `Hasil analisis menunjukkan kemungkinan adanya indikasi Alzheimer's Disease (AD). <strong>Sangat disarankan untuk segera berkonsultasi dengan dokter spesialis neurologi atau psikiater geriatri</strong> untuk evaluasi lebih lanjut. Diagnosis dini sangat penting untuk penanganan yang optimal. Jangan tunda untuk mendapatkan pemeriksaan medis yang komprehensif.`
+                };
+            } else if (fullTerm.includes('Mild Cognitive Impairment')) {
+                return {
+                    title: '🟡 Perlu Monitoring dan Konsultasi',
+                    content: `Hasil menunjukkan kemungkinan Mild Cognitive Impairment (MCI). <strong>Disarankan untuk berkonsultasi dengan dokter</strong> untuk evaluasi kognitif yang lebih detail. MCI dapat dikelola dengan baik melalui gaya hidup sehat, stimulasi kognitif, dan monitoring rutin. Penting untuk melakukan pemeriksaan berkala untuk memantau perkembangan kondisi.`
+                };
+            } else if (fullTerm.includes('Normal')) {
+                return {
+                    title: '✅ Hasil Normal',
+                    content: `Hasil analisis menunjukkan kondisi normal. <strong>Tetap jaga kesehatan otak</strong> dengan pola hidup sehat, olahraga teratur, diet bergizi, dan stimulasi mental yang cukup. Lakukan pemeriksaan kesehatan rutin dan konsultasi dengan dokter jika ada keluhan atau perubahan fungsi kognitif.`
+                };
+            } else {
+                return {
+                    title: '📋 Konsultasi Medis Disarankan',
+                    content: `Untuk interpretasi hasil yang akurat dan lengkap, <strong>sangat disarankan untuk berkonsultasi dengan dokter spesialis</strong>. Hasil AI ini hanya sebagai alat bantu skrining awal dan tidak menggantikan diagnosis medis profesional.`
+                };
+            }
+        }
+
+        function displayProbabilityBreakdown(probabilities) {
+            const probabilityBreakdown = document.getElementById('probabilityBreakdown');
+            const probabilityItems = document.getElementById('probabilityItems');
+            
+            if (!probabilities || Object.keys(probabilities).length === 0) {
+                probabilityBreakdown.style.display = 'none';
+                return;
+            }
+
+            // Clear previous items
+            probabilityItems.innerHTML = '';
+            
+            // Convert probabilities to array and sort by value (descending)
+            const probArray = Object.entries(probabilities)
+                .map(([key, value]) => ({
+                    label: getFullMedicalTerm(key),
+                    value: parseFloat(value) * 100,
+                    originalKey: key.toLowerCase()
+                }))
+                .sort((a, b) => b.value - a.value);
+
+            // Create probability items
+            probArray.forEach((prob, index) => {
+                const item = document.createElement('div');
+                item.className = 'probability-item';
+                
+                // Determine color class based on condition
+                let colorClass = 'normal';
+                if (prob.originalKey.includes('ad') || prob.originalKey.includes('alzheimer')) {
+                    colorClass = 'alzheimer';
+                } else if (prob.originalKey.includes('mci')) {
+                    colorClass = 'mci';
+                }
+                
+                item.innerHTML = `
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="probability-label">${prob.label}</span>
+                            <span class="probability-value" style="color: ${colorClass === 'alzheimer' ? '#ef4444' : colorClass === 'mci' ? '#f59e0b' : '#10b981'}">${prob.value.toFixed(1)}%</span>
+                        </div>
+                        <div class="probability-bar">
+                            <div class="probability-fill ${colorClass}" style="width: 0%" data-width="${prob.value}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                probabilityItems.appendChild(item);
+            });
+            
+            // Show the breakdown section
+            probabilityBreakdown.style.display = 'block';
+            
+            // Animate the bars with delay
+            setTimeout(() => {
+                const fills = probabilityItems.querySelectorAll('.probability-fill');
+                fills.forEach((fill, index) => {
+                    setTimeout(() => {
+                        fill.style.width = fill.dataset.width;
+                    }, index * 200);
+                });
+            }, 500);
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultPrediction = document.getElementById('resultPrediction');
+            const confidenceText = document.getElementById('confidenceText');
+            const confidenceFill = document.getElementById('confidenceFill');
+            const medicalAdvice = document.getElementById('medicalAdvice');
+            const adviceTitle = document.getElementById('adviceTitle');
+            const adviceContent = document.getElementById('adviceContent');
+
+            // Set prediction with full medical term
+            const prediction = data.prediction || data.label;
+            const fullTerm = getFullMedicalTerm(prediction);
+            resultPrediction.textContent = fullTerm;
+            
+            // Medical color coding
+            const predLower = fullTerm.toLowerCase();
+            if (predLower.includes("alzheimer") || predLower.includes('ad')) {
+                resultPrediction.className = 'result-prediction positive';
+            } else if (predLower.includes('mild cognitive impairment') || predLower.includes('mci')) {
+                resultPrediction.className = 'result-prediction mci';
+            } else {
+                resultPrediction.className = 'result-prediction negative';
+            }
+
+            // Display probability breakdown
+            if (data.probabilities) {
+                displayProbabilityBreakdown(data.probabilities);
+            }
+
+            // Set confidence with smooth animation - handle both confidence and confidence_value
+            const confidence = Math.round((data.confidence_value || data.confidence || 0) * 100);
+            confidenceText.textContent = confidence + '%';
+            
+            // Animate confidence bar
+            setTimeout(() => {
+                confidenceFill.style.width = confidence + '%';
+            }, 500);
+
+            // Show medical advice
+            const advice = getMedicalAdvice(prediction);
+            adviceTitle.innerHTML = advice.title;
+            adviceContent.innerHTML = advice.content;
+            medicalAdvice.style.display = 'block';
+
+            // Update technical info from backend response
+            document.getElementById('preprocessing').textContent = 
+                data.preprocessing || 'Slice sesuai rules & Resize 224x224';
+            document.getElementById('modelMethod').textContent = 
+                data.method || 'EfficientNet V2 + MHSA (Remote)';
+            document.getElementById('processedSize').textContent = 
+                data.image_size_processed || '224x224 pixels';
+            document.getElementById('processingMethod').textContent = 
+                'Server AI UB';
+
+            // Show results with smooth animation
+            setTimeout(() => {
+                resultsSection.classList.add('show');
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            showMessage(message, 'error-message');
+        }
+
+        function showSuccess(message) {
+            showMessage(message, 'success-message');
+        }
+
+        function showMessage(message, className) {
+            const container = document.querySelector('.container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${className}`;
+            messageDiv.textContent = message;
+            container.insertBefore(messageDiv, container.firstChild);
+
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                messageDiv.style.transform = 'translateX(-20px)';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Initialize with upload section
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('upload');
+        });
+    </script>
+</body>
+</html>
