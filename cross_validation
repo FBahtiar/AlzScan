@@ -1,0 +1,93 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Subset
+from sklearn.model_selection import StratifiedKFold
+import numpy as np
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+k_folds = 5
+num_epochs = 50
+batch_size = 32
+criterion = nn.CrossEntropyLoss()
+
+targets = np.array([label for _, label in train_dataset.samples])
+skf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=42)
+
+fold_results = []
+
+print(f"Mulai {k_folds}-Fold Cross Validation")
+
+for fold, (train_idx, val_idx) in enumerate(skf.split(np.zeros(len(targets)), targets)):
+    print(f"\nFold {fold+1}/{k_folds}")
+    train_subset = Subset(train_dataset, train_idx)
+    val_subset = Subset(train_dataset, val_idx)
+    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False)
+
+
+    model = ModifiedIntegratedModel(best_config, num_classes).to(device)
+    optimizer = optim.Adam(model.parameters(),
+                           lr=best_config['learning_rate'],
+                           weight_decay=best_config['weight_decay'])
+
+    best_val_acc = 0
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss, correct, total = 0.0, 0, 0
+        for x, y in train_loader:
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
+            outputs = model(x)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += y.size(0)
+            correct += (predicted == y).sum().item()
+        train_acc = correct / total
+
+        model.eval()
+        val_correct, val_total = 0, 0
+        with torch.no_grad():
+            for x, y in val_loader:
+                x, y = x.to(device), y.to(device)
+                outputs = model(x)
+                _, predicted = torch.max(outputs.data, 1)
+                val_total += y.size(0)
+                val_correct += (predicted == y).sum().item()
+        val_acc = val_correct / val_total
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+
+        print(f"Epoch {epoch+1}/{num_epochs} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
+
+    fold_results.append(best_val_acc)
+    print(f"Best Validation Accuracy (Fold {fold+1}): {best_val_acc:.4f}")
+
+mean_acc = np.mean(fold_results)
+std_acc = np.std(fold_results)
+print(f"\nRata-rata Akurasi: {mean_acc:.4f} ± {std_acc:.4f}")
+
+fold_labels = [f"Fold {i+1}" for i in range(k_folds)]
+mean_acc = np.mean(fold_results)
+std_acc = np.std(fold_results)
+
+plt.figure(figsize=(8, 5))
+bars = plt.bar(fold_labels, fold_results, color='skyblue', edgecolor='black')
+plt.axhline(y=mean_acc, color='red', linestyle='--', label=f'Rata-rata ({mean_acc:.4f})')
+
+for bar, acc in zip(bars, fold_results):
+    plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002,
+             f"{acc:.3f}", ha='center', va='bottom', fontsize=9)
+
+plt.title('Hasil 5-Fold Cross Validation Hybrid Model')
+plt.xlabel('Fold')
+plt.ylabel('Akurasi Validasi')
+plt.ylim(0, 1.05)
+plt.legend()
+plt.tight_layout()
+plt.show()
