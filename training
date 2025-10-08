@@ -1,0 +1,283 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision import transforms, datasets
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
+from sklearn.preprocessing import label_binarize
+import time
+import math
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using device: {device}")
+
+data_transforms = transforms.Compose([
+    transforms.Grayscale(num_output_channels=3),
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+data_dir = '/home/nathasyasiregar/opsi_alzheimer/env_alzheimer/1300'
+train_dataset = datasets.ImageFolder(root=os.path.join(data_dir, 'train'), transform=data_transforms)
+validation_dataset = datasets.ImageFolder(root=os.path.join(data_dir, 'valid'), transform=data_transforms)
+test_dataset = datasets.ImageFolder(root=os.path.join(data_dir, 'test'), transform=data_transforms)
+
+num_classes = len(train_dataset.classes)
+print(f"Number of classes: {num_classes}")
+print(f"Class names: {train_dataset.classes}")
+
+num_workers = 4 if device.type == 'cuda' else 2
+batch_size = 32
+
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+val_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+
+
+class ClassificationBertSelfAttention(nn.Module):
+    def __init__(self, config, num_classes):
+        super().__init__()
+        self.num_attention_heads = config['num_of_attention_heads']
+        self.attention_head_size = int(config['hidden_size'] / config['num_of_attention_heads'])
+        self.all_head_size = self.num_attention_heads * self.attention_head_size
+        self.query = nn.Linear(config['hidden_size'], self.all_head_size)
+        self.key = nn.Linear(config['hidden_size'], self.all_head_size)
+        self.value = nn.Linear(config['hidden_size'], self.all_head_size)
+        self.dense = nn.Linear(config['hidden_size'], config['hidden_size'])
+        self.classifier = nn.Linear(config['hidden_size'], num_classes)
+
+    def transpose_for_scores(self, x):
+        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        x = x.view(*new_x_shape)
+        return x.permute(0, 2, 1, 3)
+
+    def forward(self, hidden_states):
+        q = self.query(hidden_states)
+        k = self.key(hidden_states)
+        v = self.value(hidden_states)
+        q = self.transpose_for_scores(q)
+        k = self.transpose_for_scores(k)
+        v = self.transpose_for_scores(v)
+        attention_scores = torch.matmul(q, k.transpose(-1, -2)) / math.sqrt(self.attention_head_size)
+        attention_probs = nn.Softmax(dim=-1)(attention_scores)
+        context = torch.matmul(attention_probs, v)
+        context = context.permute(0, 2, 1, 3).contiguous()
+        new_shape = context.size()[:-2] + (self.all_head_size,)
+        context = context.view(*new_shape)
+        output = self.dense(context)
+        logits = self.classifier(output[:, 0, :])
+        return logits
+
+
+class ModifiedIntegratedModel(nn.Module):
+    def __init__(self, config, num_classes):
+        super().__init__()
+        self.efficientnet = effnetv2_l()
+        self.efficientnet.classifier = nn.Identity()
+        self.pre_attention_layers = nn.Sequential(
+            nn.LayerNorm(1792),
+            nn.Linear(1792, config["hidden_size"]),
+            nn.Dropout(config['dropout_rate']),
+            nn.GELU()
+        )
+        self.mhsa = ClassificationBertSelfAttention(config, num_classes)
+
+    def forward(self, x):
+        features = self.efficientnet.features(x)
+        features = self.efficientnet.conv(features)
+        b, c, h, w = features.shape
+        features = features.view(b, h * w, c)
+        features = self.pre_attention_layers(features)
+        logits = self.mhsa(features)
+        return logits
+
+
+best_config = {
+    'hidden_size': 1792,
+    'num_of_attention_heads': 16,
+    'dropout_rate': 0.3,
+    'learning_rate': 0.00012462843364065098,
+    'weight_decay': 0.0001551476098488373,
+    'batch_size': 32
+}
+
+model = ModifiedIntegratedModel(best_config, num_classes).to(device)
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=best_config['learning_rate'], weight_decay=best_config['weight_decay'])
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=10, verbose=True)
+
+num_epochs = 100
+train_losses, train_accuracies, val_accuracies, learning_rates = [], [], [], []
+best_accuracy, best_model_state = 0, None
+start_time = time.time()
+
+print("Starting Final Training with Best Parameters")
+print("=" * 60)
+
+for epoch in range(num_epochs):
+    model.train()
+    running_loss, correct_train, total_train = 0, 0, 0
+
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+        _, predicted = torch.max(outputs.data, 1)
+        total_train += labels.size(0)
+        correct_train += (predicted == labels).sum().item()
+
+    train_accuracy = correct_train / total_train
+    avg_train_loss = running_loss / len(train_loader)
+    train_losses.append(avg_train_loss)
+    train_accuracies.append(train_accuracy)
+
+    model.eval()
+    correct_val, total_val = 0, 0
+
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total_val += labels.size(0)
+            correct_val += (predicted == labels).sum().item()
+
+    val_accuracy = correct_val / total_val
+    val_accuracies.append(val_accuracy)
+    learning_rates.append(optimizer.param_groups[0]['lr'])
+    scheduler.step(val_accuracy)
+
+    if val_accuracy > best_accuracy:
+        best_accuracy = val_accuracy
+        best_model_state = model.state_dict().copy()
+        torch.save(model.state_dict(), 'best_model_final.pth')
+
+    if (epoch + 1) % 5 == 0 or epoch == 0:
+        print(f'Epoch [{epoch+1:3d}/{num_epochs}] | Loss: {avg_train_loss:.4f} | '
+              f'Train Acc: {train_accuracy:.4f} | Val Acc: {val_accuracy:.4f} | '
+              f'Best Val: {best_accuracy:.4f} | LR: {optimizer.param_groups[0]["lr"]:.2e}')
+
+    if epoch > 50 and val_accuracy < best_accuracy * 0.95:
+        print(f"Early stopping at epoch {epoch+1}")
+        break
+
+model.load_state_dict(best_model_state)
+
+model.eval()
+all_labels, all_preds, all_probs = [], [], []
+correct_test, total_test = 0, 0
+
+with torch.no_grad():
+    for inputs, labels in test_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = model(inputs)
+        probs = torch.softmax(outputs, dim=1)
+        _, predicted = torch.max(outputs.data, 1)
+        total_test += labels.size(0)
+        correct_test += (predicted == labels).sum().item()
+        all_labels.extend(labels.cpu().numpy())
+        all_preds.extend(predicted.cpu().numpy())
+        all_probs.extend(probs.cpu().numpy())
+
+test_accuracy = correct_test / total_test
+print(f"\nFinal Test Accuracy: {test_accuracy:.4f}")
+print(f"Best Validation Accuracy: {best_accuracy:.4f}")
+
+plt.figure(figsize=(15, 5))
+plt.subplot(1, 3, 1)
+plt.plot(train_losses, label='Training Loss', color='blue')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training Loss')
+plt.legend()
+plt.grid(True)
+
+plt.subplot(1, 3, 2)
+plt.plot(train_accuracies, label='Training Accuracy', color='green')
+plt.plot(val_accuracies, label='Validation Accuracy', color='orange')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.legend()
+plt.grid(True)
+
+plt.subplot(1, 3, 3)
+plt.plot(learning_rates, label='Learning Rate', color='red')
+plt.xlabel('Epoch')
+plt.ylabel('Learning Rate')
+plt.title('Learning Rate Schedule')
+plt.yscale('log')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.savefig('training_metrics_final.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+cm = confusion_matrix(all_labels, all_preds)
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=train_dataset.classes,
+            yticklabels=train_dataset.classes)
+plt.title('Confusion Matrix')
+plt.ylabel('True Label')
+plt.xlabel('Predicted Label')
+plt.savefig('confusion_matrix_final.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+plt.figure(figsize=(10, 8))
+colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown']
+y_test_binarized = label_binarize(all_labels, classes=range(num_classes))
+all_probs = np.array(all_probs)
+
+fpr, tpr, roc_auc = {}, {}, {}
+for i in range(num_classes):
+    fpr[i], tpr[i], _ = roc_curve(y_test_binarized[:, i], all_probs[:, i])
+    roc_auc[i] = auc(fpr[i], tpr[i])
+    plt.plot(fpr[i], tpr[i], color=colors[i % len(colors)], lw=2,
+             label=f'Class {train_dataset.classes[i]} (AUC = {roc_auc[i]:.3f})')
+
+plt.plot([0, 1], [0, 1], 'k--', lw=2)
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve for Multi-class Classification')
+plt.legend(loc="lower right")
+plt.grid(True)
+plt.savefig('roc_curve_final.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("\nClassification Report:")
+print(classification_report(all_labels, all_preds, target_names=train_dataset.classes))
+
+print("\nAUC Scores:")
+for i, class_name in enumerate(train_dataset.classes):
+    print(f"{class_name}: {roc_auc[i]:.4f}")
+
+training_time = time.time() - start_time
+print(f"\nTotal Training Time: {training_time/60:.1f} minutes")
+
+history = {
+    'train_losses': train_losses,
+    'train_accuracies': train_accuracies,
+    'val_accuracies': val_accuracies,
+    'learning_rates': learning_rates,
+    'test_accuracy': test_accuracy,
+    'best_val_accuracy': best_accuracy,
+    'config': best_config
+}
+
+torch.save(history, 'training_history.pth')
+print("Training history saved to 'training_history.pth'")
+print("Final Training Completed.")
